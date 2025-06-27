@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use App\Models\Subcategory;
+use App\Models\Category;
+
 
 class ProductController extends Controller
 {
@@ -113,5 +116,146 @@ public function destroy($id)
         'message' => 'Product deleted successfully'
     ]);
 }
+
+
+//home page latest eight products
+public function latestEightProducts()
+{
+    $products = Product::select('id', 'name', 'price', 'image', 'short_description')
+        ->latest()
+        ->take(8)
+        ->get();
+
+    $products->transform(function ($item) {
+        $item->image = $item->image ? asset('storage/' . $item->image) : null;
+        return $item;
+    });
+
+    return response()->json([
+        'status' => 'success',
+        'products' => $products
+    ]);
+}
+
+public function allSubcategoriesWithProducts()
+{
+    $subcategories = Subcategory::with([
+        'products' => function ($query) {
+            $query->select('id', 'subcategory_id', 'name', 'price', 'image');
+        }
+    ])
+    ->select('id', 'name', 'category_id')
+    ->get();
+
+    return response()->json([
+        'status' => 'success',
+        'subcategories' => $subcategories
+    ]);
+}
+
+public function filterProducts(Request $request)
+{
+    $query = Product::with(['category', 'subcategory']);
+
+    // Optional filter: category
+    if ($request->filled('category_id')) {
+        $query->where('category_id', $request->category_id);
+    }
+
+    // Optional filter: subcategory
+    if ($request->filled('subcategory_id')) {
+        $query->where('subcategory_id', $request->subcategory_id);
+    }
+
+    // Optional filter: minimum price
+    if ($request->filled('min_price')) {
+        $query->where('price', '>=', $request->min_price);
+    }
+
+    // Optional filter: maximum price
+    if ($request->filled('max_price')) {
+        $query->where('price', '<=', $request->max_price);
+    }
+
+    // Optional search by product name
+    if ($request->filled('search')) {
+        $query->where('name', 'like', '%' . $request->search . '%');
+    }
+
+    // Optional sort
+    if ($request->filled('sort')) {
+        switch ($request->sort) {
+            case 'price_asc':
+                $query->orderBy('price', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('price', 'desc');
+                break;
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+        }
+    } else {
+        // Default sort by newest
+        $query->orderBy('created_at', 'desc');
+    }
+
+    // Pagination
+    $perPage = $request->input('per_page', 12); // default: 12
+    $products = $query->paginate($perPage);
+
+    // Format image URL
+    $products->getCollection()->transform(function ($item) {
+        $item->image = $item->image ? asset('storage/' . $item->image) : null;
+        return $item;
+    });
+
+    return response()->json([
+        'status' => 'success',
+        'products' => $products
+    ]);
+}
+
+
+public function searchAll(Request $request)
+{
+    $request->validate([
+        'search' => 'required|string|max:255'
+    ]);
+
+    $search = $request->search;
+
+    // 🔍 Search Categories by name
+    $categories = Category::where('name', 'like', "%{$search}%")
+        ->select('id', 'name')
+        ->get();
+
+    // 🔍 Search Subcategories by name
+    $subcategories = Subcategory::where('name', 'like', "%{$search}%")
+        ->select('id', 'name', 'category_id')
+        ->get();
+
+    // 🔍 Search Products by name only
+    $products = Product::where('name', 'like', "%{$search}%")
+        ->select('id', 'name', 'price', 'image', 'category_id', 'subcategory_id')
+        ->limit(10) // Optional limit
+        ->get()
+        ->transform(function ($item) {
+            $item->image = $item->image ? asset('storage/' . $item->image) : null;
+            return $item;
+        });
+
+    return response()->json([
+        'status' => 'success',
+        'search_term' => $search,
+        'categories' => $categories,
+        'subcategories' => $subcategories,
+        'products' => $products,
+    ]);
+}
+
 
 }

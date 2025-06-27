@@ -151,4 +151,49 @@ public function deleteSubcategory($id)
     ]);
 }
 
+
+
+
+//user categories fetch all 
+public function getUserCategories()
+{
+    $categories = Category::select('id','name', 'image')->get();
+
+    return response()->json([
+        'status' => 'success',
+        'categories' => $categories
+    ]);
+}
+
+
+// Show categories (name + image only) for navbar
+public function getNavbarCategories()
+{
+    $categories = Category::select('id', 'name')->get();
+
+    $categories->transform(function ($category) {
+        $category->image = $category->image ? asset('storage/' . $category->image) : null;
+        return $category;
+    });
+
+    return response()->json([
+        'status' => 'success',
+        'categories' => $categories
+    ]);
+}
+
+// Fetch subcategories for a given category ID
+public function getSubcategoriesByCategory($id)
+{
+    $subcategories = Subcategory::where('category_id', $id)->select('id', 'name')->get();
+
+    return response()->json([
+        'status' => 'success',
+        'subcategories' => $subcategories
+    ]);
+}
+
+
+
+
 }
