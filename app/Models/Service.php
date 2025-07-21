@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Service extends Model
 {
 
-    protected $fillable = ['image', 'description'];
+protected $fillable = ['name', 'image', 'description', 'conclusion'];
 
     public function subservices()
     {

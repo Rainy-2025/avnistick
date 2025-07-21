@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
 use App\Models\Service;
 use App\Models\Subservice;
 
@@ -13,7 +12,9 @@ class ServiceController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'name' => 'required|string|max:255',
             'description' => 'required|string',
+            'conclusion' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpg,jpeg,png',
         ]);
 
@@ -23,6 +24,7 @@ class ServiceController extends Controller
         }
 
         $service = Service::create($validated);
+
         return response()->json(['status' => 'success', 'data' => $service]);
     }
 
@@ -38,7 +40,7 @@ class ServiceController extends Controller
     {
         $service = Service::findOrFail($id);
 
-        $data = $request->only('description');
+        $data = $request->only('name', 'description', 'conclusion');
 
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('services', 'public');
@@ -61,7 +63,9 @@ class ServiceController extends Controller
     public function addSubservice(Request $request, $serviceId)
     {
         $validated = $request->validate([
+            'name' => 'required|string|max:255',
             'description' => 'required|string',
+            'conclusion' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpg,jpeg,png',
         ]);
 
@@ -81,7 +85,7 @@ class ServiceController extends Controller
     {
         $sub = Subservice::findOrFail($id);
 
-        $data = $request->only('description');
+        $data = $request->only('name', 'description', 'conclusion');
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('subservices', 'public');
@@ -99,34 +103,32 @@ class ServiceController extends Controller
         return response()->json(['status' => 'success', 'message' => 'Subservice deleted']);
     }
 
+    // Get all services with their subservices
+    public function getServicesWithSubservices()
+    {
+        $services = Service::with('subservices')->get();
 
-  
-
-public function getServicesWithSubservices()
-{
-    $services = Service::with('subservices')->get();
-
-    return response()->json([
-        'status' => 'success',
-        'services' => $services
-    ]);
-}
-
-public function getSubservicesByService($id)
-{
-    $service = Service::find($id);
-
-    if (!$service) {
-        return response()->json(['status' => 'error', 'message' => 'Service not found'], 404);
+        return response()->json([
+            'status' => true,
+            'message' => 'Services fetched successfully.',
+            'services' => $services
+        ]);
     }
 
-    $subservices = $service->subservices;
+    // Get all subservices of a specific service
+    public function getSubservicesByService($id)
+    {
+        $service = Service::find($id);
 
-    return response()->json([
-        'status' => 'success',
-        'subservices' => $subservices
-    ]);
+        if (!$service) {
+            return response()->json(['status' => 'error', 'message' => 'Service not found'], 404);
+        }
+
+        $subservices = $service->subservices;
+
+        return response()->json([
+            'status' => 'success',
+            'subservices' => $subservices
+        ]);
+    }
 }
-
-}
-

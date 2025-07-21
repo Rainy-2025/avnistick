@@ -6,29 +6,19 @@ use Illuminate\Http\Request;
 use App\Models\Category;
 use App\Models\Subcategory;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 
 class CategoryController extends Controller
 {
-    // Add a new category
+    // ✅ Add a new category (only name)
     public function addCategory(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
-        
 
-        $data = [
+        $category = Category::create([
             'name' => $request->name,
-        ];
-
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('categories', 'public');
-            $data['image'] = $path;
-        }
-
-        $category = Category::create($data);
+        ]);
 
         return response()->json([
             'status' => 'success',
@@ -37,28 +27,33 @@ class CategoryController extends Controller
         ]);
     }
 
-    // Add a subcategory under a category
-public function addSubcategory(Request $request, $id)
+    // ✅ Add a subcategory (name + image) under category
+    public function addSubcategory(Request $request, $categoryId)
     {
-       $request->validate([
-    'name' => 'required|string|max:255',
-]);
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
+        ]);
 
-$category = Category::findOrFail($id);
+        $data = [
+            'name' => $request->name,
+            'category_id' => $categoryId,
+        ];
 
-$subcategory = $category->subcategories()->create([
-    'name' => $request->name
-]);
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('subcategories', 'public');
+        }
 
-return response()->json([
-    'status' => 'success',
-    'message' => 'Subcategory created successfully',
-    'subcategory' => $subcategory
-]);
+        $subcategory = Subcategory::create($data);
 
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Subcategory created successfully',
+            'subcategory' => $subcategory
+        ]);
     }
 
-    // Get all categories with their subcategories
+    // ✅ Get all categories with subcategories
     public function getCategoriesWithSubcategories()
     {
         $categories = Category::with('subcategories')->get();
@@ -69,131 +64,118 @@ return response()->json([
         ]);
     }
 
-   // Update a category
+    // ✅ Update category (only name)
+    public function updateCategory(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
 
-public function updateCategory(Request $request, $id)
-{
-    try {
         $category = Category::findOrFail($id);
-
-        if ($request->has('name')) {
-            $category->name = $request->name;
-        }
-
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('categories', 'public');
-            $category->image = $path;
-        }
-
-        $category->save(); // attempt save
-
-        Log::info('Category updated:', $category->toArray());
+        $category->update(['name' => $request->name]);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Category updated successfully',
             'category' => $category
         ]);
+    }
 
-    } catch (\Exception $e) {
-        Log::error('Update failed: '.$e->getMessage());
+    // ✅ Delete category
+    public function deleteCategory($id)
+    {
+        $category = Category::findOrFail($id);
+        $category->delete();
 
         return response()->json([
-            'status' => 'error',
-            'message' => 'Update failed',
-            'error' => $e->getMessage()
-        ], 500);
-    }
-}
-
-public function deleteCategory($id)
-{
-    $category = Category::findOrFail($id);
-
-    // Optional: delete image
-    if ($category->image) {
-        Storage::disk('public')->delete($category->image);
+            'status' => 'success',
+            'message' => 'Category deleted successfully'
+        ]);
     }
 
-    $category->delete();
+    // ✅ Update subcategory (name + image)
+    public function updateSubcategory(Request $request, $id)
+    {
+        $subcategory = Subcategory::findOrFail($id);
 
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Category deleted successfully'
-    ]);
-}
-public function updateSubcategory(Request $request, $id)
-{
-    $subcategory = Subcategory::findOrFail($id);
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
+        ]);
 
-    $request->validate([
-        'name' => 'required|string|max:255',
-    ]);
+        $subcategory->name = $request->name;
 
-    $subcategory->name = $request->name;
-    $subcategory->save();
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($subcategory->image) {
+                Storage::disk('public')->delete($subcategory->image);
+            }
 
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Subcategory updated successfully',
-        'subcategory' => $subcategory
-    ]);
-}
+            $subcategory->image = $request->file('image')->store('subcategories', 'public');
+        }
 
-public function deleteSubcategory($id)
-{
-    $subcategory = Subcategory::findOrFail($id);
-    $subcategory->delete();
+        $subcategory->save();
 
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Subcategory deleted successfully'
-    ]);
-}
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Subcategory updated successfully',
+            'subcategory' => $subcategory
+        ]);
+    }
 
+    // ✅ Delete subcategory
+    public function deleteSubcategory($id)
+    {
+        $subcategory = Subcategory::findOrFail($id);
 
+        if ($subcategory->image) {
+            Storage::disk('public')->delete($subcategory->image);
+        }
 
+        $subcategory->delete();
 
-//user categories fetch all 
-public function getUserCategories()
-{
-    $categories = Category::select('id','name', 'image')->get();
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Subcategory deleted successfully'
+        ]);
+    }
 
-    return response()->json([
-        'status' => 'success',
-        'categories' => $categories
-    ]);
-}
+    // ✅ Show categories (for user frontend)
+    public function getUserCategories()
+    {
+        $categories = Category::select('id', 'name')->get();
 
+        return response()->json([
+            'status' => 'success',
+            'categories' => $categories
+        ]);
+    }
 
-// Show categories (name + image only) for navbar
-public function getNavbarCategories()
-{
-    $categories = Category::select('id', 'name')->get();
+    // ✅ Navbar categories with image URL
+    public function getNavbarCategories()
+    {
+        $categories = Category::select('id', 'name')->get();
 
-    $categories->transform(function ($category) {
-        $category->image = $category->image ? asset('storage/' . $category->image) : null;
-        return $category;
-    });
+        return response()->json([
+            'status' => 'success',
+            'categories' => $categories
+        ]);
+    }
 
-    return response()->json([
-        'status' => 'success',
-        'categories' => $categories
-    ]);
-}
+    // ✅ Get subcategories by category ID
+    public function getSubcategoriesByCategory($id)
+    {
+        $subcategories = Subcategory::where('category_id', $id)
+            ->select('id', 'name', 'image')
+            ->get()
+            ->map(function ($sub) {
+                $sub->image = $sub->image ? asset('storage/' . $sub->image) : null;
+                return $sub;
+            });
 
-// Fetch subcategories for a given category ID
-public function getSubcategoriesByCategory($id)
-{
-    $subcategories = Subcategory::where('category_id', $id)->select('id', 'name')->get();
-
-    return response()->json([
-        'status' => 'success',
-        'subcategories' => $subcategories
-    ]);
-}
-
-
-
-
+        return response()->json([
+            'status' => 'success',
+            'subcategories' => $subcategories
+        ]);
+    }
 }
