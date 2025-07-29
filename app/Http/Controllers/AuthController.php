@@ -9,10 +9,11 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Carbon\Carbon;
-use App\Mail\OtpMail; // Mail class
+use App\Mail\OtpMail;
 
 class AuthController extends Controller
 {
+    // Send OTP for email verification
     public function sendOtp(Request $request)
     {
         $request->validate([
@@ -35,12 +36,15 @@ class AuthController extends Controller
             ]
         );
 
-        // Send email using Mailable class
         Mail::to($request->email)->send(new OtpMail($otp));
 
-        return response()->json(['message' => 'OTP sent to your email.']);
+        return response()->json([
+            'status' => true,
+            'message' => 'OTP sent to your email.'
+        ], 200);
     }
 
+    // Verify OTP and register user
     public function verifyOtp(Request $request)
     {
         $request->validate([
@@ -51,15 +55,24 @@ class AuthController extends Controller
         $record = DB::table('email_verifications')->where('email', $request->email)->first();
 
         if (!$record) {
-            return response()->json(['message' => 'No OTP found for this email.'], 404);
+            return response()->json([
+                'status' => false,
+                'message' => 'No OTP found for this email.'
+            ], 404);
         }
 
         if ((string)$record->otp !== (string)$request->otp) {
-            return response()->json(['message' => 'Invalid OTP.'], 400);
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid OTP.'
+            ], 400);
         }
 
         if (Carbon::parse($record->expires_at)->isPast()) {
-            return response()->json(['message' => 'OTP expired.'], 400);
+            return response()->json([
+                'status' => false,
+                'message' => 'OTP expired.'
+            ], 400);
         }
 
         $user = User::create([
@@ -73,12 +86,15 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
+            'status' => true,
             'message' => 'Email verified and user registered.',
             'access_token' => $token,
             'token_type' => 'Bearer',
-        ]);
+            'user' => $user,
+        ], 200);
     }
 
+    // Login user
     public function login(Request $request)
     {
         $request->validate([
@@ -91,7 +107,7 @@ class AuthController extends Controller
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => false,
-                'message' => 'Invalid credentials.',
+                'message' => 'Invalid credentials.'
             ], 401);
         }
 
@@ -103,24 +119,26 @@ class AuthController extends Controller
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user
-        ]);
+        ], 200);
     }
 
+    // Get authenticated user profile
     public function profile(Request $request)
     {
         return response()->json([
             'status' => true,
-            'user' => $request->user(),
-        ]);
+            'user' => $request->user()
+        ], 200);
     }
 
+    // Logout user
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
 
         return response()->json([
             'status' => true,
-            'message' => 'Logout successful.',
-        ]);
+            'message' => 'Logout successful.'
+        ], 200);
     }
 }

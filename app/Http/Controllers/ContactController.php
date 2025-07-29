@@ -7,8 +7,6 @@ use App\Models\Contact;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ContactNotification;
 
-
-
 class ContactController extends Controller
 {
     // Submit contact form (User)
@@ -28,16 +26,22 @@ class ContactController extends Controller
         Mail::to('darwairavina2002@gmail.com')->send(new ContactNotification($contact));
 
         return response()->json([
-            'status' => 'success',
+            'http'    => true,
+            'status'  => 'success',
             'message' => 'Contact form submitted and email sent to admin'
-        ]);
+        ], 200);
     }
 
     // Admin: Get all contacts
     public function index()
     {
         $contacts = Contact::latest()->get();
-        return response()->json($contacts);
+        return response()->json([
+            'http'    => true,
+            'status'  => 'success',
+            'message' => 'All contacts fetched successfully',
+            'data'    => $contacts
+        ], 200);
     }
 
     // Admin: Update contact
@@ -48,10 +52,11 @@ class ContactController extends Controller
         $contact->update($request->only(['name', 'email', 'phone', 'subject', 'message']));
 
         return response()->json([
-            'status' => 'success',
+            'http'    => true,
+            'status'  => 'success',
             'message' => 'Contact updated successfully',
-            'data' => $contact
-        ]);
+            'data'    => $contact
+        ], 200);
     }
 
     // Admin: Delete contact
@@ -60,8 +65,9 @@ class ContactController extends Controller
         Contact::findOrFail($id)->delete();
 
         return response()->json([
-            'status' => 'success',
+            'http'    => true,
+            'status'  => 'success',
             'message' => 'Contact deleted successfully'
-        ]);
+        ], 200);
     }
 }

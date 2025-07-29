@@ -25,47 +25,71 @@ class ServiceController extends Controller
 
         $service = Service::create($validated);
 
-        return response()->json(['status' => 'success', 'data' => $service]);
+        return response()->json([
+            'status' => true,
+            'message' => 'Service created successfully.',
+            'data' => $service
+        ], 201);
     }
 
     // Get All Services with Subservices
     public function index()
     {
         $services = Service::with('subservices')->latest()->get();
-        return response()->json($services);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Services fetched successfully.',
+            'services' => $services
+        ], 200);
     }
 
     // Update Service
     public function update(Request $request, $id)
     {
-        $service = Service::findOrFail($id);
+        $service = Service::find($id);
+
+        if (!$service) {
+            return response()->json(['status' => false, 'message' => 'Service not found.'], 404);
+        }
 
         $data = $request->only('name', 'description', 'conclusion');
 
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('services', 'public');
-            $data['image'] = $path;
+            $data['image'] = $request->file('image')->store('services', 'public');
         }
 
         $service->update($data);
 
-        return response()->json(['status' => 'success', 'message' => 'Service updated']);
+        return response()->json([
+            'status' => true,
+            'message' => 'Service updated successfully.',
+            'data' => $service
+        ], 200);
     }
 
     // Delete Service
     public function destroy($id)
     {
-        Service::findOrFail($id)->delete();
-        return response()->json(['status' => 'success', 'message' => 'Service deleted']);
+        $service = Service::find($id);
+
+        if (!$service) {
+            return response()->json(['status' => false, 'message' => 'Service not found.'], 404);
+        }
+
+        $service->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Service deleted successfully.'
+        ], 200);
     }
 
     // Add Subservice to a Service
     public function addSubservice(Request $request, $serviceId)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
             'description' => 'required|string',
-            'conclusion' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpg,jpeg,png',
         ]);
 
@@ -77,15 +101,23 @@ class ServiceController extends Controller
 
         $subservice = Subservice::create($validated);
 
-        return response()->json(['status' => 'success', 'data' => $subservice]);
+        return response()->json([
+            'status' => true,
+            'message' => 'Subservice added successfully.',
+            'data' => $subservice
+        ], 201);
     }
 
     // Update Subservice
     public function updateSubservice(Request $request, $id)
     {
-        $sub = Subservice::findOrFail($id);
+        $sub = Subservice::find($id);
 
-        $data = $request->only('name', 'description', 'conclusion');
+        if (!$sub) {
+            return response()->json(['status' => false, 'message' => 'Subservice not found.'], 404);
+        }
+
+        $data = $request->only('description');
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('subservices', 'public');
@@ -93,14 +125,28 @@ class ServiceController extends Controller
 
         $sub->update($data);
 
-        return response()->json(['status' => 'success', 'message' => 'Subservice updated']);
+        return response()->json([
+            'status' => true,
+            'message' => 'Subservice updated successfully.',
+            'data' => $sub
+        ], 200);
     }
 
     // Delete Subservice
     public function deleteSubservice($id)
     {
-        Subservice::findOrFail($id)->delete();
-        return response()->json(['status' => 'success', 'message' => 'Subservice deleted']);
+        $sub = Subservice::find($id);
+
+        if (!$sub) {
+            return response()->json(['status' => false, 'message' => 'Subservice not found.'], 404);
+        }
+
+        $sub->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Subservice deleted successfully.'
+        ], 200);
     }
 
     // Get all services with their subservices
@@ -110,9 +156,9 @@ class ServiceController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'Services fetched successfully.',
+            'message' => 'All services with subservices fetched.',
             'services' => $services
-        ]);
+        ], 200);
     }
 
     // Get all subservices of a specific service
@@ -121,14 +167,15 @@ class ServiceController extends Controller
         $service = Service::find($id);
 
         if (!$service) {
-            return response()->json(['status' => 'error', 'message' => 'Service not found'], 404);
+            return response()->json(['status' => false, 'message' => 'Service not found.'], 404);
         }
 
         $subservices = $service->subservices;
 
         return response()->json([
-            'status' => 'success',
+            'status' => true,
+            'message' => 'Subservices fetched successfully.',
             'subservices' => $subservices
-        ]);
+        ], 200);
     }
 }

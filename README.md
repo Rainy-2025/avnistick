@@ -1,61 +1,372 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Avnistick Server API Documentation
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This document provides a comprehensive overview of the RESTful APIs available in the Avnistick Server backend. It covers authentication, category management, product management, contact, services, gallery, landing page, and other related APIs. Example request and response data are included to facilitate testing and integration.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Table of Contents
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- [Authentication](#authentication)
+  - [Admin Authentication](#admin-authentication)
+  - [User Authentication](#user-authentication)
+- [Category Management](#category-management)
+- [Product Management](#product-management)
+  - [Ready-made and Semi-customizable Products](#ready-made-and-semi-customizable-products)
+  - [Customizable Products](#customizable-products)
+  - [All Products](#all-products)
+- [Contact](#contact)
+- [Services and Subservices](#services-and-subservices)
+- [Gallery Management](#gallery-management)
+- [Landing Page Management](#landing-page-management)
+- [Testing Data Examples](#testing-data-examples)
+- [Authentication Notes](#authentication-notes)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Authentication
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Admin Authentication
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- **POST** `/admin/login`  
+  Login as admin.  
+  **Request Body:**  
+  ```json
+  {
+    "email": "admin@example.com",
+    "password": "password123"
+  }
+  ```  
+  **Response:**  
+  ```json
+  {
+    "status": true,
+    "message": "Login successful.",
+    "data": {
+      "token": "admin-access-token",
+      "admin": { /* admin user object */ }
+    }
+  }
+  ```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- **POST** `/admin/logout`  
+  Logout admin (requires auth token).
 
-## Laravel Sponsors
+- **GET** `/admin/profile`  
+  Get admin profile (requires auth token).
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+### User Authentication
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+- **POST** `/send-otp`  
+  Send OTP to email for registration.  
+  **Request Body:**  
+  ```json
+  {
+    "name": "User Name",
+    "email": "user@example.com",
+    "password": "password123"
+  }
+  ```  
+  **Response:**  
+  ```json
+  {
+    "status": true,
+    "message": "OTP sent to your email."
+  }
+  ```
 
-## Contributing
+- **POST** `/verify-otp`  
+  Verify OTP and register user.  
+  **Request Body:**  
+  ```json
+  {
+    "email": "user@example.com",
+    "otp": "123456"
+  }
+  ```  
+  **Response:**  
+  ```json
+  {
+    "status": true,
+    "message": "Email verified and user registered.",
+    "access_token": "user-access-token",
+    "token_type": "Bearer",
+    "user": { /* user object */ }
+  }
+  ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- **POST** `/login`  
+  User login.  
+  **Request Body:**  
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "password123"
+  }
+  ```  
+  **Response:**  
+  ```json
+  {
+    "status": true,
+    "message": "Login successful.",
+    "access_token": "user-access-token",
+    "token_type": "Bearer",
+    "user": { /* user object */ }
+  }
+  ```
 
-## Code of Conduct
+- **POST** `/logout`  
+  Logout user (requires auth token).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- **GET** `/profile`  
+  Get user profile (requires auth token).
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Category Management
 
-## License
+- **POST** `/categories`  
+  Add a new category (admin only).  
+  **Request Body:**  
+  ```json
+  {
+    "name": "Category Name"
+  }
+  ```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- **GET** `/categories`  
+  Get all categories with subcategories (admin).
+
+- **PUT** `/categories/{id}`  
+  Update category name (admin).
+
+- **DELETE** `/categories/{id}`  
+  Delete category (admin).
+
+- **POST** `/categories/{id}/subcategories`  
+  Add subcategory under category (admin).  
+  Supports image upload (multipart/form-data).
+
+- **PUT** `/subcategories/{id}`  
+  Update subcategory (name + image) (admin).
+
+- **DELETE** `/subcategories/{id}`  
+  Delete subcategory (admin).
+
+- **GET** `/user/categories`  
+  Get categories for user frontend.
+
+- **GET** `/user/navbar_categories`  
+  Get categories for navbar (user).
+
+- **GET** `/user/categories/{id}/subcategories`  
+  Get subcategories by category ID (user).  
+  If `id` is 0, returns all subcategories.
+
+---
+
+## Product Management
+
+### Ready-made and Semi-customizable Products
+
+- **POST** `/readymade-products`  
+  Create a product (admin).  
+  Supports fields: name, type (readymade/semi_customizable), category_id, subcategory_id, descriptions, images, sizes, attributes, properties.
+
+- **GET** `/readymade-products`  
+  Get all products (admin).
+
+- **GET** `/readymade-products/{id}`  
+  Get product by ID (admin).
+
+- **PUT** `/readymade-products/{id}`  
+  Update product (admin).
+
+- **DELETE** `/readymade-products/{id}`  
+  Delete product (admin).
+
+- **GET** `/user/readymade-products`  
+  Get ready-made products (user).
+
+---
+
+### Customizable Products
+
+- **POST** `/customize-products`  
+  Create customizable product (admin).
+
+- **GET** `/customize-products`  
+  Get all customizable products (admin).
+
+- **GET** `/customize-products/{id}`  
+  Get customizable product by ID (admin).
+
+- **DELETE** `/customize-products/{id}`  
+  Delete customizable product (admin).
+
+- **GET** `/user/customize-products`  
+  Get customizable products (user).
+
+---
+
+### All Products
+
+- **GET** `/all-products`  
+  Get all products with optional filters:  
+  - `type`: `readymade`, `semi_customizable`, or `customize`  
+  - `category_id`  
+  - `subcategory_id`  
+  - `search` (name search)  
+
+---
+
+## Contact
+
+- **POST** `/user/contact`  
+  Submit contact form (user).  
+  Sends email notification to admin.
+
+- **GET** `/admin/contacts`  
+  Get all contacts (admin).
+
+- **PUT** `/admin/contacts/{id}`  
+  Update contact (admin).
+
+- **DELETE** `/admin/contacts/{id}`  
+  Delete contact (admin).
+
+---
+
+## Services and Subservices
+
+- **POST** `/services`  
+  Add service (admin).
+
+- **GET** `/services`  
+  Get all services with subservices (admin and user).
+
+- **PUT** `/services/{id}`  
+  Update service (admin).
+
+- **DELETE** `/services/{id}`  
+  Delete service (admin).
+
+- **POST** `/services/{id}/subservices`  
+  Add subservice to service (admin).
+
+- **PUT** `/subservices/{id}`  
+  Update subservice (admin).
+
+- **DELETE** `/subservices/{id}`  
+  Delete subservice (admin).
+
+- **GET** `/user/services`  
+  Get services with subservices (user).
+
+- **GET** `/user/services/{id}/subservices`  
+  Get subservices by service ID (user).
+
+---
+
+## Gallery Management
+
+- Instagram Images (max 5)  
+  - **POST** `/upload-instagram`  
+  - **GET** `/instagram`  
+  - **DELETE** `/instagram/{id}`  
+
+- Art Section  
+  - **POST** `/upload-art`  
+  - **GET** `/art`  
+  - **DELETE** `/art/{id}`  
+
+- Gallery Images  
+  - **POST** `/upload-gallery`  
+  - **GET** `/gallery`  
+  - **DELETE** `/gallery/{id}`  
+
+- Artists (max 5)  
+  - **POST** `/upload-artist`  
+  - **GET** `/artists`  
+  - **DELETE** `/artist/{id}`  
+
+---
+
+## Landing Page Management
+
+- Banners  
+  - **POST** `/admin/banner`  
+  - **GET** `/admin/banner`  
+  - **POST** `/admin/banner/{id}`  
+  - **DELETE** `/admin/banner/{id}`  
+
+- Brands  
+  - **POST** `/admin/brand`  
+  - **GET** `/admin/brand`  
+  - **POST** `/admin/brand/{id}`  
+
+- User-facing:  
+  - **GET** `/user/banners`  
+  - **GET** `/user/brand`  
+
+---
+
+## Testing Data Examples
+
+### Admin Login
+
+```bash
+curl -X POST http://yourdomain.com/api/admin/login \
+-H "Content-Type: application/json" \
+-d '{"email":"admin@example.com","password":"password123"}'
+```
+
+### Create Category
+
+```bash
+curl -X POST http://yourdomain.com/api/categories \
+-H "Authorization: Bearer {admin_token}" \
+-H "Content-Type: application/json" \
+-d '{"name":"New Category"}'
+```
+
+### Create Ready-made Product
+
+```bash
+curl -X POST http://yourdomain.com/api/readymade-products \
+-H "Authorization: Bearer {admin_token}" \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "Product 1",
+  "type": "readymade",
+  "category_id": 1,
+  "subcategory_id": 1,
+  "short_description": "Short desc",
+  "long_description": "Long desc",
+  "images": ["image1.jpg", "image2.jpg"],
+  "sizes": [{"size":"M","price":100,"stock":10}],
+  "attributes": [{"heading":"Color","type":"string","value":"Red"}],
+  "properties": "Some properties"
+}'
+```
+
+### Send OTP (User Registration)
+
+```bash
+curl -X POST http://yourdomain.com/api/send-otp \
+-H "Content-Type: application/json" \
+-d '{"name":"User","email":"user@example.com","password":"password123"}'
+```
+
+---
+
+## Authentication Notes
+
+- Admin and user authentication use Sanctum tokens.
+- Include `Authorization: Bearer {token}` header for protected routes.
+- OTP is used for user registration verification.
+
+---
+
+This README provides a detailed overview of the API endpoints, their usage, and example data for testing. Use this as a reference for integrating with the Avnistick backend.

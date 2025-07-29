@@ -21,7 +21,7 @@ class CategoryController extends Controller
         ]);
 
         return response()->json([
-            'status' => 'success',
+            'status' => true,
             'message' => 'Category created successfully',
             'category' => $category
         ]);
@@ -47,7 +47,7 @@ class CategoryController extends Controller
         $subcategory = Subcategory::create($data);
 
         return response()->json([
-            'status' => 'success',
+            'status' => true,
             'message' => 'Subcategory created successfully',
             'subcategory' => $subcategory
         ]);
@@ -59,7 +59,8 @@ class CategoryController extends Controller
         $categories = Category::with('subcategories')->get();
 
         return response()->json([
-            'status' => 'success',
+            'status' => true,
+            'message' => 'Fetched all categories with subcategories',
             'categories' => $categories
         ]);
     }
@@ -75,7 +76,7 @@ class CategoryController extends Controller
         $category->update(['name' => $request->name]);
 
         return response()->json([
-            'status' => 'success',
+            'status' => true,
             'message' => 'Category updated successfully',
             'category' => $category
         ]);
@@ -88,7 +89,7 @@ class CategoryController extends Controller
         $category->delete();
 
         return response()->json([
-            'status' => 'success',
+            'status' => true,
             'message' => 'Category deleted successfully'
         ]);
     }
@@ -117,7 +118,7 @@ class CategoryController extends Controller
         $subcategory->save();
 
         return response()->json([
-            'status' => 'success',
+            'status' => true,
             'message' => 'Subcategory updated successfully',
             'subcategory' => $subcategory
         ]);
@@ -135,7 +136,7 @@ class CategoryController extends Controller
         $subcategory->delete();
 
         return response()->json([
-            'status' => 'success',
+            'status' => true,
             'message' => 'Subcategory deleted successfully'
         ]);
     }
@@ -146,7 +147,8 @@ class CategoryController extends Controller
         $categories = Category::select('id', 'name')->get();
 
         return response()->json([
-            'status' => 'success',
+            'status' => true,
+            'message' => 'User categories fetched successfully',
             'categories' => $categories
         ]);
     }
@@ -157,25 +159,36 @@ class CategoryController extends Controller
         $categories = Category::select('id', 'name')->get();
 
         return response()->json([
-            'status' => 'success',
+            'status' => true,
+            'message' => 'Navbar categories fetched successfully',
             'categories' => $categories
         ]);
     }
 
     // ✅ Get subcategories by category ID
-    public function getSubcategoriesByCategory($id)
-    {
+  public function getSubcategoriesByCategory($id)
+{
+    if ($id == 0) {
+        // Return all subcategories
+        $subcategories = Subcategory::select('id', 'name', 'image', 'category_id')->get();
+    } else {
+        // Return subcategories for specific category
         $subcategories = Subcategory::where('category_id', $id)
-            ->select('id', 'name', 'image')
-            ->get()
-            ->map(function ($sub) {
-                $sub->image = $sub->image ? asset('storage/' . $sub->image) : null;
-                return $sub;
-            });
-
-        return response()->json([
-            'status' => 'success',
-            'subcategories' => $subcategories
-        ]);
+            ->select('id', 'name', 'image', 'category_id')
+            ->get();
     }
+
+    // Add full image URL
+    $subcategories = $subcategories->map(function ($sub) {
+        $sub->image = $sub->image ? asset('storage/' . $sub->image) : null;
+        return $sub;
+    });
+
+    return response()->json([
+        'status' => true,
+        'message' => $id == 0 ? 'All subcategories fetched successfully' : 'Subcategories fetched successfully',
+        'subcategories' => $subcategories
+    ]);
+}
+
 }
